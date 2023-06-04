@@ -6,6 +6,7 @@ import 'antd/lib/input/style'; // Import the styles for the Input component
 import { listNotes } from './graphql/queries';
 import { v4 as uuid } from 'uuid'; // Import the UUID library to create a unique identifier for the client
 import { createNote as CreateNote, deleteNote as DeleteNote, updateNote as UpdateNote } from './graphql/mutations'; // Import the createNote and deleteNote mutation definition
+import { onCreateNote } from './graphql/subscriptions'; // Import the onCreateNote subscription
 
 // reate a new CLIENT_ID variable
 const CLIENT_ID = uuid();
@@ -140,6 +141,18 @@ function App() {
 
   useEffect(() => {
     fetchNotes()
+    const subscription = API.graphql({
+      query: onCreateNote
+    })
+      .subscribe({
+        next: noteData => {
+          const note = noteData.value.data.onCreateNote
+          if (CLIENT_ID === note.clientId) return
+          dispatch({ type: 'ADD_NOTE', note })
+          console.log("subscription");
+        }
+      })
+    return () => subscription.unsubscribe()
   }, []);
 
 
