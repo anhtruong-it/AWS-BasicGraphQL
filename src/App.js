@@ -1,11 +1,11 @@
 import React, { useEffect, useReducer } from 'react';
-import { API } from 'aws-amplify';
+import { API, graphqlOperation } from 'aws-amplify';
 import { List, Button, Input } from 'antd';
 import 'antd/lib/button/style'; // Import the styles for the Button component
 import 'antd/lib/input/style'; // Import the styles for the Input component
 import { listNotes } from './graphql/queries';
 import { v4 as uuid } from 'uuid'; // Import the UUID library to create a unique identifier for the client
-import { createNote as CreateNote, deleteNote as DeleteNote } from './graphql/mutations'; // Import the createNote and deleteNote mutation definition
+import { createNote as CreateNote, deleteNote as DeleteNote, updateNote as UpdateNote } from './graphql/mutations'; // Import the createNote and deleteNote mutation definition
 
 // reate a new CLIENT_ID variable
 const CLIENT_ID = uuid();
@@ -94,6 +94,22 @@ function App() {
     }
   }
 
+  async function updateNote(note) {
+    const index = state.notes.findIndex(n => n.id === note.id)
+    const notes = [...state.notes]
+    notes[index].completed = !note.completed
+    dispatch({ type: 'SET_NOTE', notes })
+    try {
+      await API.graphql({
+        query: UpdateNote,
+        variables: { input: { id: note.id, completed: notes[index].completed } }
+      })
+      console.log('updated note');
+    } catch (err) {
+      console.log('error: ', err);
+    }
+  }
+
   const styles = {
     container: { padding: 20 },
     input: { marginBottom: 10 },
@@ -106,7 +122,12 @@ function App() {
       <List.Item
         style={styles.item}
         actions={[
-          <p style={styles.p} onClick={() => deleteNote(item)}>Delete</p>
+          <>
+            <p style={styles.p} onClick={() => deleteNote(item)}>Delete</p>
+            <p style={styles.p} onClick={() => updateNote(item)}>
+              {item.completed ? 'completed' : 'mark completed'}
+            </p>
+          </>
         ]}
       >
         <List.Item.Meta
