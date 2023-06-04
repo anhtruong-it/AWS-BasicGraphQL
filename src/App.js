@@ -5,7 +5,7 @@ import 'antd/lib/button/style'; // Import the styles for the Button component
 import 'antd/lib/input/style'; // Import the styles for the Input component
 import { listNotes } from './graphql/queries';
 import { v4 as uuid } from 'uuid'; // Import the UUID library to create a unique identifier for the client
-import { createNote as CreateNote } from './graphql/mutations'; // Import the createNote mutation definition
+import { createNote as CreateNote, deleteNote as DeleteNote } from './graphql/mutations'; // Import the createNote and deleteNote mutation definition
 
 // reate a new CLIENT_ID variable
 const CLIENT_ID = uuid();
@@ -76,6 +76,24 @@ function App() {
     dispatch({ type: 'SET_INPUT', name: e.target.name, value: e.target.value })
   }
 
+  // create the deleteNote function
+  async function deleteNote({ id }) {
+    const index = state.notes.findIndex(n => n.id === id)
+    const notes = [
+      ...state.notes.slice(0, index),
+      ...state.notes.slice(index + 1)];
+    dispatch({ type: 'SET_NOTES', notes })
+    try {
+      await API.graphql({
+        query: DeleteNote,
+        variables: { input: { id } }
+      })
+      console.log("note deleted");
+    } catch (err) {
+      console.log('error: ', err);
+    }
+  }
+
   const styles = {
     container: { padding: 20 },
     input: { marginBottom: 10 },
@@ -85,7 +103,12 @@ function App() {
 
   function renderItem(item) {
     return (
-      <List.Item style={styles.item}>
+      <List.Item
+        style={styles.item}
+        actions={[
+          <p style={styles.p} onClick={() => deleteNote(item)}>Delete</p>
+        ]}
+      >
         <List.Item.Meta
           title={item.name}
           description={item.description}
